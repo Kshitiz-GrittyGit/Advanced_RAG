@@ -19,6 +19,9 @@ parsed_document.json
 normalized_document.json
 debug_layout.png
 
+# Qdrant vector database storage
+qdrant_storage/
+
 # Documents (PDFs may be large or sensitive)
 documents/
 

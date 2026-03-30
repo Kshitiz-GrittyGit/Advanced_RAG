@@ -1,18 +1,21 @@
-from unstructured.partition.text import partition_text
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pathlib import Path
 from sklearn.cluster import DBSCAN
+from collections import Counter
+from datetime import datetime
 import json
 import os
+import re
 import psycopg2
 import pdfplumber
 import multiprocessing
+import traceback
 
 base_dir = Path(__file__).resolve().parent
 
 DOCUMENTS_DIR = base_dir / 'documents'
 OUTPUT_DIR    = base_dir / 'output'
 
-# Override DB_USER with env var if postgres role doesn't exist on your system
 DB_CONFIG = dict(
     host     = "localhost",
     database = "pdf_tables",
@@ -20,29 +23,192 @@ DB_CONFIG = dict(
     password = os.getenv("DB_PASSWORD", ""),
 )
 
-CHUNK_SIZE      = 500   # approximate tokens (chars / 4)
-CHUNK_OVERLAP   = 50
-ROW_GAP_THRESH  = 12    # pt — vertical gap that signals a new region
-MERGE_THRESH    = 30    # pt — merge bands that are closer than this
-N_WORKERS       = max(1, multiprocessing.cpu_count() - 2)
+CHUNK_SIZE    = 1500  # characters
+CHUNK_OVERLAP = 200   # characters
+N_WORKERS     = max(1, multiprocessing.cpu_count() - 2)
+
+# Heading classification: font size ratio relative to body text
+HEADING_L1_RATIO = 1.4   # 40%+ larger = major heading
+HEADING_L2_RATIO = 1.1   # 10%+ larger = sub-heading
 
 
 #############################################
-# LAYOUT SIGNALS  (applied per region, not per page)
+# 1. FONT-SIZE ANALYSIS
+#    Replaces partition_text heading detection.
+#    Body text = most common font size in the document.
+#    Anything larger is a heading, with level based on how much larger.
 #############################################
 
-def ruling_line_score(region):
-    """Primary: explicit horizontal/vertical lines drawn in the PDF."""
-    h_lines = [l for l in region.lines if l.get("height", 0) < 2  and l.get("width", 0) > 20]
-    v_lines = [l for l in region.lines if l.get("width",  0) < 2  and l.get("height", 0) > 10]
-    rects   = [r for r in region.rects if r.get("width",  0) > 20 and r.get("height", 0) > 5]
-    if len(h_lines) >= 3 or len(v_lines) >= 2 or len(rects) >= 2:
-        return 3
-    return 0
+def compute_dominant_font_size(pdf, sample_pages=30):
+    """Most common font size across the document = body text size."""
+    sizes = []
+    for page in pdf.pages[:sample_pages]:
+        for c in page.chars:
+            if c.get("size"):
+                sizes.append(round(c["size"], 1))
+    if not sizes:
+        return 12.0
+    return Counter(sizes).most_common(1)[0][0]
+
+
+def classify_heading(text, font_size, dominant_size, font_name=None):
+    """
+    Returns 1 (major), 2 (sub), or None (body) based on font size vs body text.
+    Also checks bold fontname and ALL CAPS as heading signals at body font size.
+    """
+    text = text.strip()
+    if not text or text.endswith(('.', ',', ';')):
+        return None
+    if len(text.split()) > 15:
+        return None
+
+    ratio = font_size / dominant_size if dominant_size > 0 and font_size > 0 else 1.0
+    is_bold = font_name and ("Bold" in font_name or "bold" in font_name)
+
+    if ratio >= HEADING_L1_RATIO:
+        return 1
+    if ratio >= HEADING_L2_RATIO:
+        return 2
+    if is_bold and len(text.split()) <= 10:
+        return 2
+    if text.isupper() and len(text.split()) <= 8:
+        return 1
+    return None
+
+
+def group_chars_to_lines(chars, page_num):
+    """Group pdfplumber chars into text lines by y-proximity (~3pt buckets)."""
+    if not chars:
+        return []
+
+    sorted_chars = sorted(chars, key=lambda c: (round(c["top"] / 3) * 3, c["x0"]))
+    lines       = []
+    current_row = [sorted_chars[0]]
+    current_y   = round(sorted_chars[0]["top"] / 3) * 3
+
+    for c in sorted_chars[1:]:
+        y = round(c["top"] / 3) * 3
+        if y == current_y:
+            current_row.append(c)
+        else:
+            _emit_line(current_row, page_num, lines)
+            current_row = [c]
+            current_y   = y
+
+    _emit_line(current_row, page_num, lines)
+    return lines
+
+
+def _emit_line(row_chars, page_num, lines):
+    text = "".join(ch["text"] for ch in row_chars).strip()
+    if not text:
+        return
+    sizes = [ch["size"] for ch in row_chars if ch.get("size")]
+    fonts = [ch.get("fontname", "") for ch in row_chars if ch.get("fontname")]
+    lines.append({
+        "text":      text,
+        "font_size": sum(sizes) / len(sizes) if sizes else 0,
+        "font_name": Counter(fonts).most_common(1)[0][0] if fonts else None,
+        "top":       row_chars[0]["top"],
+        "page":      page_num,
+    })
+
+
+def merge_lines_to_paragraphs(lines):
+    """
+    Merge consecutive body-text lines into full sentences/paragraphs.
+    Headings stay as individual items. Body lines not ending with sentence
+    punctuation are joined to the next line (they are PDF line-break continuations).
+    """
+    merged = []
+    buffer = []
+
+    for line in lines:
+        if line.get("heading_level") is not None:
+            if buffer:
+                merged.append({
+                    "text": " ".join(b["text"] for b in buffer),
+                    "page": buffer[0]["page"],
+                    "heading_level": None,
+                })
+                buffer = []
+            merged.append(line)
+        else:
+            buffer.append(line)
+            if line["text"].rstrip().endswith(('.', '?', '!', ':', ';')):
+                merged.append({
+                    "text": " ".join(b["text"] for b in buffer),
+                    "page": buffer[0]["page"],
+                    "heading_level": None,
+                })
+                buffer = []
+
+    if buffer:
+        merged.append({
+            "text": " ".join(b["text"] for b in buffer),
+            "page": buffer[0]["page"],
+            "heading_level": None,
+        })
+
+    return merged
+
+
+#############################################
+# 2. ADAPTIVE GAP THRESHOLDS
+#    Computed from each page's actual char heights instead of fixed magic numbers.
+#############################################
+
+def adaptive_gap_threshold(page):
+    """Gap between row-groups = 1.8x median char height on this page."""
+    heights = [c["bottom"] - c["top"] for c in page.chars
+               if c.get("bottom") and c.get("top") and c["bottom"] > c["top"]]
+    if not heights:
+        return 12
+    return sorted(heights)[len(heights) // 2] * 1.8
+
+
+def adaptive_merge_threshold(page):
+    """Merge nearby groups = 2.5x median char height."""
+    heights = [c["bottom"] - c["top"] for c in page.chars
+               if c.get("bottom") and c.get("top") and c["bottom"] > c["top"]]
+    if not heights:
+        return 30
+    return sorted(heights)[len(heights) // 2] * 2.5
+
+
+#############################################
+# 3. TABLE DETECTION
+#    PRIMARY:  pdfplumber find_tables() with false-positive validation
+#    FALLBACK: column_cluster + row_spacing for borderless tables
+#############################################
+
+def find_valid_tables(page):
+    """
+    Use pdfplumber's find_tables() and reject false positives.
+    A single-column "table" with long cell text is a paragraph in a box, not a table.
+    """
+    valid = []
+    for t in page.find_tables():
+        rows = t.extract()
+        if not rows or len(rows) < 2:
+            continue
+        col_counts = [sum(1 for c in r if c is not None) for r in rows]
+        avg_cols   = sum(col_counts) / len(col_counts) if col_counts else 0
+
+        # Reject false positives: "tables" that are really paragraphs in text boxes.
+        # Real tables have short, data-like cells. False positives have long prose cells.
+        total_cells  = sum(len(r) for r in rows)
+        total_text   = sum(len(str(c or '')) for r in rows for c in r)
+        avg_cell_len = total_text / max(total_cells, 1)
+        if avg_cell_len > 50 and avg_cols <= 2:
+            continue
+
+        valid.append({"rows": rows, "bbox": t.bbox})
+    return valid
 
 
 def column_cluster_score(words):
-    """Secondary: 3+ distinct x-columns indicate tabular layout."""
+    """Borderless fallback: 3+ x-aligned columns."""
     if len(words) < 5:
         return 0
     xs     = [[w["x0"]] for w in words]
@@ -52,7 +218,7 @@ def column_cluster_score(words):
 
 
 def row_spacing_score(words):
-    """Secondary: consistent vertical gaps between rows."""
+    """Borderless fallback: consistent vertical row gaps."""
     if len(words) < 5:
         return 0
     ys = sorted(set(round(w["top"]) for w in words))
@@ -64,190 +230,158 @@ def row_spacing_score(words):
     return 1 if consistent / len(diffs) > 0.6 else 0
 
 
-def is_table_region(region):
-    words = region.extract_words()
-    score = (
-        ruling_line_score(region)
-        + column_cluster_score(words)
-        + row_spacing_score(words)
-    )
-    return score >= 3
+def is_borderless_table(cropped):
+    """Check if a text region is a borderless table (no ruling lines)."""
+    words = cropped.extract_words()
+    return column_cluster_score(words) + row_spacing_score(words) >= 3
 
 
 #############################################
-# REGION SPLITTING
-# Detects horizontal bands by finding significant vertical gaps
-# between word rows, then merges bands that are close together.
-# This lets us handle pages like: para / table / para correctly.
+# 4. BOILERPLATE DETECTION
+#    Finds repeated text in top/bottom margins across 3+ pages.
 #############################################
 
-def _word_row_groups(page):
-    """Return sorted list of (y_top, y_bottom) for each row cluster on the page."""
-    words = page.extract_words()
-    if not words:
-        return []
+def detect_boilerplate(pdf, top_pt=50, bot_pt=50, min_repeats=3):
+    """Return set of header/footer strings that repeat across pages."""
+    top_texts, bot_texts = [], []
 
-    # Bucket words into rows (5pt quantization covers minor baseline shifts)
-    rows = {}
-    for w in words:
-        key = round(w["top"] / 5) * 5
-        rows.setdefault(key, []).append(w)
+    for page in pdf.pages:
+        chars = page.chars
+        if not chars:
+            top_texts.append("")
+            bot_texts.append("")
+            continue
 
-    sorted_ys = sorted(rows.keys())
-    groups, g_start, prev_y = [], sorted_ys[0], sorted_ys[0]
+        top_chars = sorted([c for c in chars if c["top"] < top_pt],
+                           key=lambda c: (c["top"], c["x0"]))
+        top_texts.append("".join(c["text"] for c in top_chars).strip())
 
-    for y in sorted_ys[1:]:
-        if y - prev_y > ROW_GAP_THRESH:
-            groups.append((g_start, prev_y + 12))
-            g_start = y
-        prev_y = y
+        bot_chars = sorted([c for c in chars if c["top"] > page.height - bot_pt],
+                           key=lambda c: (c["top"], c["x0"]))
+        bot_texts.append("".join(c["text"] for c in bot_chars).strip())
 
-    groups.append((g_start, prev_y + 12))
-    return groups
-
-
-def _merge_groups(groups):
-    """Merge bands that are within MERGE_THRESH of each other."""
-    if not groups:
-        return []
-    merged = [list(groups[0])]
-    for start, end in groups[1:]:
-        if start - merged[-1][1] <= MERGE_THRESH:
-            merged[-1][1] = end
-        else:
-            merged.append([start, end])
-    return [tuple(g) for g in merged]
+    boilerplate = set()
+    for text, count in Counter(top_texts).items():
+        if count >= min_repeats and text:
+            boilerplate.add(text)
+    for text, count in Counter(bot_texts).items():
+        if count >= min_repeats and text:
+            boilerplate.add(text)
+    return boilerplate
 
 
-def detect_regions(page):
-    """
-    Split page into horizontal bands and classify each as 'table' or 'text'.
-    A single page like  [para] [table] [para]  produces three regions.
-    Returns list of {'type', 'cropped': pdfplumber crop}.
-    """
-    bands   = _merge_groups(_word_row_groups(page))
-    pw      = page.width
-    ph      = page.height
+def strip_boilerplate(text, boilerplate):
+    for bp in boilerplate:
+        text = text.replace(bp, "")
+    return text.strip()
+
+
+#############################################
+# 5. PAGE REGION EXTRACTION
+#    Splits page into table bboxes + text slices between them.
+#############################################
+
+def extract_text_regions(page, table_bboxes, page_num, boilerplate=None):
+    """Extract text from areas of the page not covered by table bounding boxes."""
+    pw, ph = page.width, page.height
+    sorted_bboxes = sorted(table_bboxes, key=lambda b: b[1])
+
+    y_edges = [0]
+    for bbox in sorted_bboxes:
+        y_edges.append(bbox[1])
+        y_edges.append(bbox[3])
+    y_edges.append(ph)
+
     regions = []
-
-    for y0, y1 in bands:
-        y0c = max(0, y0 - 5)
-        y1c = min(ph, y1 + 5)
-        cropped     = page.crop((0, y0c, pw, y1c))
-        region_type = "table" if is_table_region(cropped) else "text"
-        regions.append({"type": region_type, "cropped": cropped})
-
+    for i in range(0, len(y_edges) - 1, 2):
+        y0, y1 = y_edges[i], y_edges[i + 1]
+        if y1 - y0 < 10:
+            continue
+        cropped = page.crop((0, max(0, y0), pw, min(ph, y1)))
+        text = cropped.extract_text()
+        if text and text.strip():
+            cleaned = strip_boilerplate(text.strip(), boilerplate) if boilerplate else text.strip()
+            if cleaned:
+                regions.append({
+                    "text":  cleaned,
+                    "chars": cropped.chars,
+                    "page":  page_num,
+                    "y0":    y0,
+                    "y1":    y1,
+                })
     return regions
 
 
 #############################################
-# TABLE STORAGE  (pdfplumber)
+# 6. HIERARCHICAL JSON
 #############################################
 
-def store_table_region(cropped, page_num, source_name, cursor):
-    for table in cropped.extract_tables():
-        if table:
-            cursor.execute(
-                "INSERT INTO extracted_tables (source, page_number, table_json) VALUES (%s, %s, %s)",
-                (source_name, page_num, json.dumps(table))
-            )
-
-
-#############################################
-# TEXT CLASSIFICATION  (unstructured partition_text)
-# partition_text is fast (no ML/OCR), applies unstructured's
-# semantic heuristics (Title / NarrativeText / ListItem) on raw strings.
-#############################################
-
-def classify_text_regions(text_regions):
-    """
-    Run unstructured's partition_text on each text region.
-    Attach page number since partition_text has no PDF context.
-    """
-    elements = []
-    for region in text_regions:
-        for elem in partition_text(text=region["text"]):
-            elem.metadata.page_number = region["page"]
-            elements.append(elem)
-    return elements
-
-
-#############################################
-# HIERARCHICAL JSON
-#############################################
-
-def get_heading_level(element):
-    text = element.text.strip()
-    if len(text) < 4 or text.endswith('.'):
-        return None
-    font_size = getattr(element.metadata, "font_size", None)
-    if font_size:
-        if font_size >= 14: return 1
-        if font_size >= 11: return 2
-    if text.isupper() and len(text.split()) <= 8:
-        return 1
-    if text.istitle() and len(text.split()) <= 10:
-        return 2
-    return None
-
-
-def build_hierarchical_json(elements):
+def build_hierarchical_json(paragraphs):
+    """Build nested document tree from font-size-classified paragraphs."""
     root  = {"title": "ROOT", "level": 0, "page": None, "content": [], "children": []}
     stack = [root]
 
-    for elem in elements:
-        text = elem.text.strip()
-        cat  = elem.category
-        page = elem.metadata.page_number
+    for para in paragraphs:
+        text  = para["text"]
+        page  = para["page"]
+        level = para.get("heading_level")
+
         if not text:
             continue
 
-        if cat == "Title":
-            level   = get_heading_level(elem) or 1
+        if level is not None:
             section = {"title": text, "level": level, "page": page, "content": [], "children": []}
             while len(stack) > 1 and stack[-1]["level"] >= level:
                 stack.pop()
             stack[-1]["children"].append(section)
             stack.append(section)
-
-        elif cat in ("NarrativeText", "ListItem", "Text"):
-            stack[-1]["content"].append({"text": text, "type": cat, "page": page})
+        else:
+            line_type = "ListItem" if re.match(r'^[*\u2022\-\u2013\u2014]\s', text) or re.match(r'^\(\w+\)\s', text) else "NarrativeText"
+            stack[-1]["content"].append({"text": text, "type": line_type, "page": page})
 
     return root
 
 
 #############################################
-# CHUNKING
+# 7. CHUNKING
 #############################################
 
-def _tokens(text):
-    return len(text) // 4
+SENTENCE_END = {".", "?", "!", ":"}
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=CHUNK_SIZE,
+    chunk_overlap=CHUNK_OVERLAP,
+    separators=["\n\n", "\n", ". ", " ", ""],
+    length_function=len,
+)
+
+
+def _join_content_items(items):
+    """Join content items respecting sentence continuity."""
+    if not items:
+        return ""
+    parts = [items[0]["text"].strip()]
+    for i in range(1, len(items)):
+        prev = items[i - 1]["text"].strip()
+        curr = items[i]["text"].strip()
+        sep  = "\n\n" if prev and prev[-1] in SENTENCE_END else " "
+        if sep == " ":
+            parts[-1] = parts[-1] + " " + curr
+        else:
+            parts.append(curr)
+    return "\n\n".join(parts)
 
 
 def chunk_section(section, parent_breadcrumb=""):
-    breadcrumb      = f"{parent_breadcrumb} > {section['title']}".strip(" >")
-    buffer, buf_tok = [], 0
-    chunks          = []
+    breadcrumb = f"{parent_breadcrumb} > {section['title']}".strip(" >")
+    chunks = []
 
-    for item in section["content"]:
-        text, tok = item["text"], _tokens(item["text"])
-
-        if buf_tok + tok > CHUNK_SIZE and buffer:
-            chunks.append({"breadcrumb": breadcrumb, "page": item["page"], "text": " ".join(buffer)})
-            overlap, ov_tok = [], 0
-            for t in reversed(buffer):
-                ov_tok += _tokens(t)
-                if ov_tok >= CHUNK_OVERLAP:
-                    break
-                overlap.insert(0, t)
-            buffer, buf_tok = overlap, sum(_tokens(t) for t in overlap)
-
-        buffer.append(text)
-        buf_tok += tok
-
-    if buffer:
-        last_page = section["content"][-1]["page"] if section["content"] else section.get("page")
-        chunks.append({"breadcrumb": breadcrumb, "page": last_page, "text": " ".join(buffer)})
+    if section["content"]:
+        full_text = _join_content_items(section["content"])
+        page      = section["content"][0]["page"]
+        for piece in splitter.split_text(full_text):
+            if piece.strip():
+                chunks.append({"breadcrumb": breadcrumb, "page": page, "text": piece.strip()})
 
     for child in section.get("children", []):
         chunks.extend(chunk_section(child, parent_breadcrumb=breadcrumb))
@@ -256,60 +390,95 @@ def chunk_section(section, parent_breadcrumb=""):
 
 
 #############################################
-# WORKER — one PDF per call
+# 8. WORKER — one PDF per call, with error handling
 #############################################
 
 def process_pdf(pdf_path):
-    pdf_path     = Path(pdf_path)
-    text_regions = []
+    """Process a single PDF. Returns (name, chunks, tables, status, error)."""
+    pdf_path = Path(pdf_path)
+    try:
+        conn   = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        table_count = 0
 
-    conn   = psycopg2.connect(**DB_CONFIG)
-    cursor = conn.cursor()
+        with pdfplumber.open(pdf_path) as pdf:
+            dominant_size = compute_dominant_font_size(pdf)
+            boilerplate   = detect_boilerplate(pdf)
+            all_lines     = []
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page_num, page in enumerate(pdf.pages, start=1):
-            for region in detect_regions(page):
-                if region["type"] == "table":
-                    store_table_region(region["cropped"], page_num, pdf_path.name, cursor)
-                else:
-                    text = region["cropped"].extract_text()
-                    if text and text.strip():
-                        text_regions.append({"text": text.strip(), "page": page_num})
+            for page_num, page in enumerate(pdf.pages, start=1):
+                # PRIMARY table detection
+                valid_tables = find_valid_tables(page)
+                table_bboxes = [t["bbox"] for t in valid_tables]
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+                for t in valid_tables:
+                    cursor.execute(
+                        "INSERT INTO extracted_tables (source, page_number, table_json) VALUES (%s, %s, %s)",
+                        (pdf_path.name, page_num, json.dumps(t["rows"]))
+                    )
+                    table_count += 1
 
-    elements   = classify_text_regions(text_regions)
-    doc_json   = build_hierarchical_json(elements)
-    all_chunks = [c for s in doc_json["children"] for c in chunk_section(s)]
+                # Text regions between tables
+                text_regions = extract_text_regions(page, table_bboxes, page_num, boilerplate)
 
-    output = {
-        "metadata": {
-            "source":     pdf_path.name,
-            "rag_chunks": len(all_chunks)
-        },
-        "hierarchy": doc_json,
-        "chunks":    all_chunks
-    }
+                for region in text_regions:
+                    cropped = page.crop((0, region["y0"], page.width, region["y1"]))
 
-    out_path = OUTPUT_DIR / (pdf_path.stem + ".json")
-    with open(out_path, "w") as f:
-        json.dump(output, f, indent=2)
+                    # FALLBACK: borderless table check
+                    if is_borderless_table(cropped):
+                        for table in cropped.extract_tables():
+                            if table:
+                                cursor.execute(
+                                    "INSERT INTO extracted_tables (source, page_number, table_json) VALUES (%s, %s, %s)",
+                                    (pdf_path.name, page_num, json.dumps(table))
+                                )
+                                table_count += 1
+                        continue
 
-    return pdf_path.name, len(all_chunks)
+                    # Extract lines with font sizes for heading detection
+                    lines = group_chars_to_lines(region["chars"], page_num)
+                    for line in lines:
+                        line["heading_level"] = classify_heading(
+                            line["text"], line["font_size"], dominant_size, line.get("font_name")
+                        )
+                    all_lines.extend(lines)
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        # Merge body lines into paragraphs, build hierarchy, chunk
+        paragraphs = merge_lines_to_paragraphs(all_lines)
+        doc_json   = build_hierarchical_json(paragraphs)
+        all_chunks = chunk_section(doc_json)
+
+        output = {
+            "metadata": {
+                "source":             pdf_path.name,
+                "dominant_font_size": dominant_size,
+                "boilerplate_count":  len(boilerplate),
+                "tables_extracted":   table_count,
+                "rag_chunks":         len(all_chunks),
+            },
+            "hierarchy": doc_json,
+            "chunks":    all_chunks,
+        }
+
+        out_path = OUTPUT_DIR / (pdf_path.stem + ".json")
+        with open(out_path, "w") as f:
+            json.dump(output, f, indent=2)
+
+        return pdf_path.name, len(all_chunks), table_count, "ok", ""
+
+    except Exception as e:
+        return pdf_path.name, 0, 0, "error", traceback.format_exc()
 
 
 #############################################
-# MAIN
+# 9. MAIN — with manifest logging
 #############################################
 
 def ensure_database():
-    """
-    Create the target database if it doesn't exist.
-    Must use autocommit=True — CREATE DATABASE cannot run inside a transaction.
-    Connects to the 'postgres' maintenance DB first; falls back to user's own DB.
-    """
     target_db = DB_CONFIG["database"]
     for fallback_db in ("postgres", DB_CONFIG["user"]):
         try:
@@ -325,12 +494,11 @@ def ensure_database():
             return
         except psycopg2.OperationalError:
             continue
-    raise RuntimeError("Could not connect to any maintenance database to create pdf_tables.")
+    raise RuntimeError("Could not connect to any maintenance database.")
 
 
 def main():
     OUTPUT_DIR.mkdir(exist_ok=True)
-
     ensure_database()
 
     conn   = psycopg2.connect(**DB_CONFIG)
@@ -350,11 +518,33 @@ def main():
     pdf_files = list(DOCUMENTS_DIR.glob("*.pdf"))
     print(f"Found {len(pdf_files)} PDFs  |  Workers: {N_WORKERS}")
 
-    with multiprocessing.Pool(N_WORKERS) as pool:
-        for name, chunks in pool.imap_unordered(process_pdf, pdf_files):
-            print(f"  {name}: {chunks} chunks")
+    manifest  = []
+    ok_count  = 0
+    err_count = 0
 
-    print("Done.")
+    with multiprocessing.Pool(N_WORKERS) as pool:
+        for name, chunks, tables, status, error in pool.imap_unordered(process_pdf, pdf_files):
+            manifest.append({
+                "source":    name,
+                "chunks":    chunks,
+                "tables":    tables,
+                "status":    status,
+                "error":     error if error else None,
+                "timestamp": datetime.now().isoformat(),
+            })
+            if status == "ok":
+                ok_count += 1
+                print(f"  OK  {name}: {chunks} chunks, {tables} tables")
+            else:
+                err_count += 1
+                last_line = error.strip().splitlines()[-1] if error else "unknown"
+                print(f"  ERR {name}: {last_line}")
+
+    manifest_path = OUTPUT_DIR / "manifest.json"
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+
+    print(f"\nDone. {ok_count} succeeded, {err_count} failed. Manifest: {manifest_path}")
 
 
 if __name__ == "__main__":

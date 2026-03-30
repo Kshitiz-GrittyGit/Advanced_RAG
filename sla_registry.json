@@ -1,0 +1,18 @@
+{
+  "_schema_version": "1.0",
+  "documents": {
+    "1234567::10-K::2025-09-27": {
+      "filename":          "AAPL_10-K_2025-09-27_1234567.pdf",
+      "company_name":      "Apple Inc.",
+      "ticker":            "AAPL",
+      "cik":               "1234567",
+      "document_type":     "10-K",
+      "fiscal_year":       2025,
+      "fiscal_quarter":    null,
+      "filing_date":       "2025-11-01",
+      "period_of_report":  "2025-09-27",
+      "exchange":          "NASDAQ",
+      "sic_code":          "3571"
+    }
+  }
+}
