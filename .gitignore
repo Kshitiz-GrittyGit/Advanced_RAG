@@ -38,3 +38,6 @@ documents/
 
 # Claude Code memory
 .claude/
+
+# retreival result file
+results.txt
