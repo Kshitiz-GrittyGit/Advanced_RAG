@@ -1,18 +1,10 @@
 [
   {
-    "source": "resume.pdf",
-    "chunks": 17,
-    "tables": 0,
-    "status": "ok",
-    "error": null,
-    "timestamp": "2026-03-30T19:36:13.175395"
-  },
-  {
     "source": "AAPL_10-K_2025-09-27_1234567.pdf",
-    "chunks": 332,
-    "tables": 51,
+    "chunks": 381,
+    "tables": 50,
     "status": "ok",
     "error": null,
-    "timestamp": "2026-03-30T19:36:21.725484"
+    "timestamp": "2026-03-31T22:54:33.327807"
   }
 ]

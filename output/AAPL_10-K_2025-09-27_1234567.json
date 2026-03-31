@@ -3,8 +3,10 @@
     "source": "AAPL_10-K_2025-09-27_1234567.pdf",
     "dominant_font_size": 8.1,
     "boilerplate_count": 0,
-    "tables_extracted": 51,
-    "rag_chunks": 332
+    "tables_extracted": 50,
+    "table_chunks": 50,
+    "narrative_chunks": 331,
+    "rag_chunks": 381
   },
   "hierarchy": {
     "title": "ROOT",
@@ -241,60 +243,6 @@
                 "type": "NarrativeText",
                 "page": 2
               },
-              {
-                "text": "Apple Inc.",
-                "type": "NarrativeText",
-                "page": 3
-              }
-            ],
-            "children": []
-          },
-          {
-            "title": "Form 10-K",
-            "level": 2,
-            "page": 3,
-            "content": [],
-            "children": []
-          },
-          {
-            "title": "For the Fiscal Year Ended September 27, 2025",
-            "level": 2,
-            "page": 3,
-            "content": [],
-            "children": []
-          },
-          {
-            "title": "TABLE OF CONTENTS",
-            "level": 2,
-            "page": 3,
-            "content": [],
-            "children": []
-          },
-          {
-            "title": "Page",
-            "level": 2,
-            "page": 3,
-            "content": [],
-            "children": []
-          },
-          {
-            "title": "Part I",
-            "level": 2,
-            "page": 3,
-            "content": [
-              {
-                "text": "Item 4.Mine Safety Disclosures18",
-                "type": "NarrativeText",
-                "page": 3
-              }
-            ],
-            "children": []
-          },
-          {
-            "title": "Part II",
-            "level": 2,
-            "page": 3,
-            "content": [
               {
                 "text": "This Annual Report on Form 10-K (\u201cForm 10-K\u201d) contains forward-looking statements, within the meaning of the Private Securities Litigation Reform Act of 1995, that involve risks and uncertainties. Many of the forward-looking statements are located in Part I, Item 1 of this Form 10-K under the heading \u201cBusiness\u201d and Part II, Item 7 of this Form 10-K under the heading \u201cManagement\u2019s Discussion and Analysis of Financial Condition and Results of Operations.\u201d Forward-looking statements provide current expectations of future events based on certain assumptions and include any statement that does not directly relate to any historical or current fact. For example, statements in this Form 10-K regarding the potential future impact of macroeconomic conditions and tariffs and other measures on the Company\u2019s business and results of operations are forward-looking statements. Forward-looking statements can also be identified by words such as \u201cfuture,\u201d \u201canticipates,\u201d \u201cbelieves,\u201d \u201cestimates,\u201d \u201cexpects,\u201d \u201cintends,\u201d \u201cplans,\u201d \u201cpredicts,\u201d \u201cwill,\u201d \u201cwould,\u201d \u201ccould,\u201d \u201ccan,\u201d \u201cmay,\u201d and similar terms. Forward-looking statements are not guarantees of future performance and the Company\u2019s actual results may differ significantly from the results discussed in the forward-looking statements.",
                 "type": "NarrativeText",
@@ -1427,7 +1375,7 @@
             "page": 23,
             "content": [
               {
-                "text": "Apple Inc.$100 $132 $136 $155 $208 $234",
+                "text": "Apple Inc.$100 $132 $136 $155 $208 $234 S&P 500 Index$100 $137 $115 $136 $185 $217 Dow Jones U.S. Technology Total Stock Market Index$100 $147 $107 $147 $220 $287",
                 "type": "NarrativeText",
                 "page": 23
               }
@@ -5334,21 +5282,16 @@
     {
       "breadcrumb": "ROOT > FORM 10-K > DOCUMENTS INCORPORATED BY REFERENCE",
       "page": 2,
-      "text": "Portions of the Registrant\u2019s definitive proxy statement relating to its 2026 annual meeting of shareholders are incorporated by reference into Part III of this Annual Report on Form 10-K where indicated. The Registrant\u2019s definitive proxy statement will be filed with the U.S. Securities and Exchange Commission within 120 days after the end of the fiscal year to which this report relates.\n\nApple Inc."
+      "text": "Portions of the Registrant\u2019s definitive proxy statement relating to its 2026 annual meeting of shareholders are incorporated by reference into Part III of this Annual Report on Form 10-K where indicated. The Registrant\u2019s definitive proxy statement will be filed with the U.S. Securities and Exchange Commission within 120 days after the end of the fiscal year to which this report relates."
     },
     {
-      "breadcrumb": "ROOT > FORM 10-K > Part I",
-      "page": 3,
-      "text": "Item 4.Mine Safety Disclosures18"
-    },
-    {
-      "breadcrumb": "ROOT > FORM 10-K > Part II",
-      "page": 4,
+      "breadcrumb": "ROOT > FORM 10-K > DOCUMENTS INCORPORATED BY REFERENCE",
+      "page": 2,
       "text": "This Annual Report on Form 10-K (\u201cForm 10-K\u201d) contains forward-looking statements, within the meaning of the Private Securities Litigation Reform Act of 1995, that involve risks and uncertainties. Many of the forward-looking statements are located in Part I, Item 1 of this Form 10-K under the heading \u201cBusiness\u201d and Part II, Item 7 of this Form 10-K under the heading \u201cManagement\u2019s Discussion and Analysis of Financial Condition and Results of Operations.\u201d Forward-looking statements provide current expectations of future events based on certain assumptions and include any statement that does not directly relate to any historical or current fact. For example, statements in this Form 10-K regarding the potential future impact of macroeconomic conditions and tariffs and other measures on the Company\u2019s business and results of operations are forward-looking statements. Forward-looking statements can also be identified by words such as \u201cfuture,\u201d \u201canticipates,\u201d \u201cbelieves,\u201d \u201cestimates,\u201d \u201cexpects,\u201d \u201cintends,\u201d \u201cplans,\u201d \u201cpredicts,\u201d \u201cwill,\u201d \u201cwould,\u201d \u201ccould,\u201d \u201ccan,\u201d \u201cmay,\u201d and similar terms. Forward-looking statements are not guarantees of future performance and the Company\u2019s actual results may differ significantly from the results discussed in the forward-looking statements."
     },
     {
-      "breadcrumb": "ROOT > FORM 10-K > Part II",
-      "page": 4,
+      "breadcrumb": "ROOT > FORM 10-K > DOCUMENTS INCORPORATED BY REFERENCE",
+      "page": 2,
       "text": "Factors that might cause such differences include, but are not limited to, those discussed in Part I, Item 1A of this Form 10-K under the heading \u201cRisk Factors.\u201d The Company assumes no obligation to revise or update any forward-looking statements for any reason, except as required by law.\n\nUnless otherwise stated, all information presented herein is based on the Company\u2019s fiscal calendar, and references to particular years, quarters, months or periods refer to the Company\u2019s fiscal years ended in September and the associated quarters, months and periods of those fiscal years. Each of the terms the \u201cCompany\u201d and \u201cApple\u201d as used herein refers collectively to Apple Inc. and its wholly owned subsidiaries, unless otherwise stated."
     },
     {
@@ -5854,7 +5797,7 @@
     {
       "breadcrumb": "ROOT > FORM 10-K > September 2020September 2021September 2022September 2023September 2024September 2025",
       "page": 23,
-      "text": "Apple Inc.$100 $132 $136 $155 $208 $234"
+      "text": "Apple Inc.$100 $132 $136 $155 $208 $234 S&P 500 Index$100 $137 $115 $136 $185 $217 Dow Jones U.S. Technology Total Stock Market Index$100 $147 $107 $147 $220 $287"
     },
     {
       "breadcrumb": "ROOT > FORM 10-K > Item 6.    [Reserved]",
@@ -6945,6 +6888,306 @@
       "breadcrumb": "ROOT > SUSAN L. WAGNER > SECTION 906 OF THE SARBANES-OXLEY ACT OF 2002",
       "page": 80,
       "text": "Date: October 31, 2025 By:/s/ Kevan Parekh Kevan Parekh Senior Vice President, Chief Financial Officer A signed original of this written statement required by Section 906 has been provided to Apple Inc. and will be retained by Apple Inc. and furnished to the Securities and Exchange Commission or its staff upon request."
+    },
+    {
+      "breadcrumb": "TABLE > page 3",
+      "page": 3,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 3]\nItem 1. | Business | 1\nItem 1A. | Risk Factors | 5\nItem 1B. | Unresolved Staff Comments | 17\nItem 1C. | Cybersecurity | 17\nItem 2. | Properties | 17\nItem 3. | Legal Proceedings | 18\nItem 4. | Mine Safety Disclosures | 18",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 3",
+      "page": 3,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 3]\nItem 5. | Market for Registrant\u2019s Common Equity, Related Stockholder Matters and Issuer Purchases of Equity Securities | 19\nItem 6. | [Reserved] | 20\nItem 7. | Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations | 21\nItem 7A. | Quantitative and Qualitative Disclosures About Market Risk | 27\nItem 8. | Financial Statements and Supplementary Data | 28\nItem 9. | Changes in and Disagreements with Accountants on Accounting and Financial Disclosure | 52\nItem 9A. | Controls and Procedures | 52\nItem 9B. | Other Information | 53\nItem 9C. | Disclosure Regarding Foreign Jurisdictions that Prevent Inspections | 53",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 3",
+      "page": 3,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 3]\nItem 10. | Directors, Executive Officers and Corporate Governance | 53",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 3",
+      "page": 3,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 3]\nItem 12. | Security Ownership of Certain Beneficial Owners and Management and Related Stockholder Matters | 53",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 3",
+      "page": 3,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 3]\nItem 14. | Principal Accountant Fees and Services | 53",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 3",
+      "page": 3,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 3]\nItem 15. | Exhibit and Financial Statement Schedules | 54",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 22",
+      "page": 22,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 22]\nOpen market and privately negotiated purchases | 33,265 | $210.43 | 33,265\nAugust 3, 2025 to August 30, 2025:\nOpen market and privately negotiated purchases | 28,986 | $224.25 | 28,986\nAugust 31, 2025 to September 27, 2025:\nOpen market and privately negotiated purchases | 27,247 | $238.56 | 27,247\nTotal | 89,498 | $99,779",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 25",
+      "page": 25,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 25]\nEurope | 111,032 | 10% | 101,328 | 7% | 94,294\nGreater China | 64,377 | (4)% | 66,952 | (8)% | 72,559\nJapan | 28,703 | 15% | 25,052 | 3% | 24,257\nRest of Asia Pacific | 33,696 | 10% | 30,658 | 4% | 29,615\nTotal net sales | $416,161 | 6% | $391,035 | 2% | $383,285",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 26",
+      "page": 26,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 26]\nMac | 33,708 | 12% | 29,984 | 2% | 29,357\niPad | 28,023 | 5% | 26,694 | (6)% | 28,300\nWearables, Home and Accessories | 35,686 | (4)% | 37,005 | (7)% | 39,845\nServices (1) | 109,158 | 14% | 96,169 | 13% | 85,200\nTotal net sales | $416,161 | 6% | $391,035 | 2% | $383,285",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 27",
+      "page": 27,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 27]\nProducts | $112,887 | $ 109,633 | $108,803\nServices | 82,314 | 71,050 | 60,345\nTotal gross margin | $195,201 | $ 180,683 | $169,148",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 27",
+      "page": 27,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 27]\nProducts | 36.8% | 37.2% | 36.5%\nServices | 75.4% | 73.9% | 70.8%\nTotal gross margin percentage | 46.9% | 46.2% | 44.1%",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 27",
+      "page": 27,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 27]\nPercentage of total net sales | 8% | 8% | 8%\nSelling, general and administrative | $27,601 | 6% | $26,097 | 5 % | $24,932\nPercentage of total net sales | 7% | 7% | 7%\nTotal operating expenses | $62,151 | 8% | $57,467 | 5 % | $54,847\nPercentage of total net sales | 15% | 15% | 14%",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 28",
+      "page": 28,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 28]\nEffective tax rate | 15.6% | 24.1% | 14.7%\nStatutory federal income tax rate | 21% | 21% | 21%",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 31",
+      "page": 31,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 31]\nConsolidated Statements of Comprehensive Income for the years ended September 27, 2025, September 28, 2024 and September 30, 2023 | 30\nConsolidated Balance Sheets as of September 27, 2025 and September 28, 2024\nConsolidated Statements of Shareholders\u2019 Equity for the years ended September 27, 2025, September 28, 2024 and September 30, 2023 | 32\nConsolidated Statements of Cash Flows for the years ended September 27, 2025, September 28, 2024 and September 30, 2023\nNotes to Consolidated Financial Statements | 34\nReports of Independent Registered Public Accounting Firm",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 32",
+      "page": 32,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 32]\nProducts | $307,003 | $294,866 | $298,085\nServices | 109,158 | 96,169 | 85,200\nTotal net sales | 416,161 | 391,035 | 383,285\nCost of sales:\nProducts | 194,116 | 185,233 | 189,282\nServices | 26,844 | 25,119 | 24,855\nTotal cost of sales | 220,960 | 210,352 | 214,137\nGross margin | 195,201 | 180,683 | 169,148\nOperating expenses:\nResearch and development | 34,550 | 31,370 | 29,915\nSelling, general and administrative | 27,601 | 26,097 | 24,932\nTotal operating expenses | 62,151 | 57,467 | 54,847\nOperating income | 133,050 | 123,216 | 114,301\nOther income/(expense), net | (321) | 269 | (565)\nIncome before provision for income taxes | 132,729 | 123,485 | 113,736\nProvision for income taxes | 20,719 | 29,749 | 16,741\nNet income | $112,010 | $93,736 | $96,995\nEarnings per share:\nBasic | $7.49 | $6.11 | $6.16\nDiluted | $7.46 | $6.08 | $6.13\nShares used in computing earnings per share:\nBasic | 14,948,500 | 15,343,783 | 15,744,231\nDiluted | 15,004,697 | 15,408,095 | 15,812,547",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 33",
+      "page": 33,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 33]\nOther comprehensive income/(loss):\nChange in foreign currency translation, net of tax | (267) | 395 | (765)\nChange in unrealized gains/losses on derivative instruments, net of tax:\nChange in fair value of derivative instruments | 849 | (832) | 323\nAdjustment for net (gains)/losses realized and included in net income | (212) | (1,337) | (1,717)\nTotal change in unrealized gains/losses on derivative instruments | 637 | (2,169) | (1,394)\nChange in unrealized gains/losses on marketable debt securities, net of tax:\nChange in fair value of marketable debt securities | 817 | 5,850 | 1,563\nAdjustment for net (gains)/losses realized and included in net income | 414 | 204 | 253\nTotal change in unrealized gains/losses on marketable debt securities | 1,231 | 6,054 | 1,816\nTotal other comprehensive income/(loss) | 1,601 | 4,280 | (343)\nTotal comprehensive income | $113,611 | $98,016 | $96,652",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 34",
+      "page": 34,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 34]\nASSETS:\nCurrent assets:\nCash and cash equivalents | $35,934 | $29,943\nMarketable securities | 18,763 | 35,228\nAccounts receivable, net | 39,777 | 33,410\nVendor non-trade receivables | 33,180 | 32,833\nInventories | 5,718 | 7,286\nOther current assets | 14,585 | 14,287\nTotal current assets | 147,957 | 152,987\nNon-current assets:\nMarketable securities | 77,723 | 91,479\nProperty, plant and equipment, net | 49,834 | 45,680\nOther non-current assets | 83,727 | 74,834\nTotal non-current assets | 211,284 | 211,993\nTotal assets | $359,241 | $364,980\nLIABILITIES AND SHAREHOLDERS\u2019 EQUITY:\nCurrent liabilities:\nAccounts payable | $69,860 | $68,960\nOther current liabilities | 66,387 | 78,304\nDeferred revenue | 9,055 | 8,249\nCommercial paper | 7,979 | 9,967\nTerm debt | 12,350 | 10,912\nTotal current liabilities | 165,631 | 176,392\nNon-current liabilities:\nTerm debt | 78,328 | 85,750\nOther non-current liabilities | 41,549 | 45,888\nTotal non-current liabilities | 119,877 | 131,638\nTotal liabilities | 285,508 | 308,030\nCommitments and contingencies\nShareholders\u2019 equity:\nCommon stock and additional paid-in capital, $0.00001 par value: 50,400,000 shares authorized; 14,773,260\nand 15,116,786 shares issued and outstanding, respectively | 93,568 | 83,276\nAccumulated deficit | (14,264) | (19,154)\nAccumulated other comprehensive loss | (5,571) | (7,172)\nTotal shareholders\u2019 equity | 73,733 | 56,950\nTotal liabilities and shareholders\u2019 equity | $359,241 | $364,980",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 35",
+      "page": 35,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 35]\nCommon stock and additional paid-in capital:\nBeginning balances | 83,276 | 73,812 | 64,849\nCommon stock issued | 1,498 | 1,423 | 1,346\nCommon stock withheld related to net share settlement of equity awards | (4,452) | (3,993) | (3,521)\nShare-based compensation | 13,246 | 12,034 | 11,138\nEnding balances | 93,568 | 83,276 | 73,812\nAccumulated deficit:\nBeginning balances | (19,154) | (214) | (3,068)\nNet income | 112,010 | 93,736 | 96,995\nDividends and dividend equivalents declared | (15,413) | (15,218) | (14,996)\nCommon stock withheld related to net share settlement of equity awards | (1,655) | (1,612) | (2,099)\nCommon stock repurchased | (90,052) | (95,846) | (77,046)\nEnding balances | (14,264) | (19,154) | (214)\nAccumulated other comprehensive loss:\nBeginning balances | (7,172) | (11,452) | (11,109)\nOther comprehensive income/(loss) | 1,601 | 4,280 | (343)\nEnding balances | (5,571) | (7,172) | (11,452)\nTotal shareholders\u2019 equity, ending balances | $73,733 | $56,950 | $62,146\nDividends and dividend equivalents declared per share or RSU | $1.02 | $0.98 | $0.94",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 36",
+      "page": 36,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 36]\nOperating activities:\nNet income | 112,010 | 93,736 | 96,995\nAdjustments to reconcile net income to cash generated by operating activities:\nDepreciation and amortization | 11,698 | 11,445 | 11,519\nShare-based compensation expense | 12,863 | 11,688 | 10,833\nOther | (89) | (2,266) | (2,227)\nChanges in operating assets and liabilities:\nAccounts receivable, net | (6,682) | (3,788) | (1,688)\nVendor non-trade receivables | (347) | (1,356) | 1,271\nInventories | 1,400 | (1,046) | (1,618)\nOther current and non-current assets | (9,197) | (11,731) | (5,684)\nAccounts payable | 902 | 6,020 | (1,889)\nOther current and non-current liabilities | (11,076) | 15,552 | 3,031\nCash generated by operating activities | 111,482 | 118,254 | 110,543\nInvesting activities:\nPurchases of marketable securities | (24,407) | (48,656) | (29,513)\nProceeds from maturities of marketable securities | 40,907 | 51,211 | 39,686\nProceeds from sales of marketable securities | 12,890 | 11,135 | 5,828\nPayments for acquisition of property, plant and equipment | (12,715) | (9,447) | (10,959)\nOther | (1,480) | (1,308) | (1,337)\nCash generated by investing activities | 15,195 | 2,935 | 3,705\nFinancing activities:\nPayments for taxes related to net share settlement of equity awards | (5,960) | (5,441) | (5,431)\nPayments for dividends and dividend equivalents | (15,421) | (15,234) | (15,025)\nRepurchases of common stock | (90,711) | (94,949) | (77,550)\nProceeds from issuance of term debt, net | 4,481 | \u2014 | 5,228\nRepayments of term debt | (10,932) | (9,958) | (11,151)\nProceeds from/(Repayments of) commercial paper, net | (2,032) | 3,960 | (3,978)\nOther | (111) | (361) | (581)\nCash used in financing activities | (120,686) | (121,983) | (108,488)\nIncrease/(Decrease) in cash, cash equivalents, and restricted cash and cash equivalents | 5,991 | (794) | 5,760\nCash, cash equivalents, and restricted cash and cash equivalents, ending balances | $35,934 | $29,943 | $30,737\nSupplemental cash flow disclosure:\nCash paid for income taxes, net | $43,369 | $26,102 | $18,679",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 39",
+      "page": 39,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 39]\nMac | 33,708 | 29,984 | 29,357\niPad | 28,023 | 26,694 | 28,300\nWearables, Home and Accessories | 35,686 | 37,005 | 39,845\nServices (1) | 109,158 | 96,169 | 85,200\nTotal net sales | $416,161 | $391,035 | $383,285\nPortion of total net sales that was included in deferred revenue as of the beginning of the\nperiod | $8,229 | $7,728 | $8,169",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 39",
+      "page": 39,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 39]\nNet income | $112,010 | $93,736 | $96,995\nDenominator:\nWeighted-average basic shares outstanding | 14,948,500 | 15,343,783 | 15,744,231\nEffect of dilutive share-based awards | 56,197 | 64,312 | 68,316\nWeighted-average diluted shares | 15,004,697 | 15,408,095 | 15,812,547\nBasic earnings per share | $7.49 | $6.11 | $6.16\nDiluted earnings per share | $7.46 | $6.08 | $6.13",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 40",
+      "page": 40,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 40]\nLevel 1:\nMoney market funds | 5,272 | \u2014 | \u2014 | 5,272 | 5,272 | \u2014 | \u2014\nMutual funds | 679 | 177 | (2) | 854 | \u2014 | 854 | \u2014\nSubtotal | 5,951 | 177 | (2) | 6,126 | 5,272 | 854 | \u2014\nLevel 2 (1):\nU.S. Treasury securities | 16,074 | 56 | (282) | 15,848 | 1,190 | 3,712 | 10,946\nU.S. agency securities | 5,269 | \u2014 | (149) | 5,120 | 251 | 2,456 | 2,413\nNon-U.S. government securities | 6,586 | 111 | (424) | 6,273 | \u2014 | 855 | 5,418\nCertificates of deposit and time deposits | 917 | \u2014 | \u2014 | 917 | 904 | \u2014 | 13\nCommercial paper | 100 | \u2014 | \u2014 | 100 | 50 | 50 | \u2014\nCorporate debt securities | 47,210 | 266 | (916) | 46,560 | \u2014 | 10,623 | 35,937\nMunicipal securities | 207 | \u2014 | (2) | 205 | \u2014 | 119 | 86\nMortgage- and asset-backed securities | 24,130 | 126 | (1,252) | 23,004 | \u2014 | 94 | 22,910\nSubtotal | 100,493 | 559 | (3,025) | 98,027 | 2,395 | 17,909 | 77,723\nTotal | $134,711 | $736 | $(3,027) | $132,420 | $35,934 | $18,763 | $77,723",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 40",
+      "page": 40,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 40]\nLevel 1:\nMoney market funds | 778 | \u2014 | \u2014 | 778 | 778 | \u2014 | \u2014\nMutual funds | 515 | 105 | (3) | 617 | \u2014 | 617 | \u2014\nSubtotal | 1,293 | 105 | (3) | 1,395 | 778 | 617 | \u2014\nLevel 2 (1):\nU.S. Treasury securities | 16,150 | 45 | (516) | 15,679 | 212 | 4,087 | 11,380\nU.S. agency securities | 5,431 | \u2014 | (272) | 5,159 | 155 | 703 | 4,301\nNon-U.S. government securities | 17,959 | 93 | (484) | 17,568 | 1,158 | 10,810 | 5,600\nCertificates of deposit and time deposits | 873 | \u2014 | \u2014 | 873 | 387 | 478 | 8\nCommercial paper | 1,066 | \u2014 | \u2014 | 1,066 | 28 | 1,038 | \u2014\nCorporate debt securities | 65,622 | 270 | (1,953) | 63,939 | 26 | 16,027 | 47,886\nMunicipal securities | 412 | \u2014 | (7) | 405 | \u2014 | 190 | 215\nMortgage- and asset-backed securities | 24,595 | 175 | (1,403) | 23,367 | \u2014 | 1,278 | 22,089\nSubtotal | 132,108 | 583 | (4,635) | 128,056 | 1,966 | 34,611 | 91,479\nTotal (2)(3) | $160,600 | $688 | $(4,638) | $156,650 | $29,943 | $35,228 | $91,479",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 42",
+      "page": 42,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 42]\nForeign exchange contracts | $62,647 | $64,069\nInterest rate contracts | $12,875 | $14,575\nDerivative instruments not designated as accounting hedges:\nForeign exchange contracts | $109,079 | $91,493",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 42",
+      "page": 42,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 42]\nMachinery, equipment and internal-use software | 83,420 | 80,205\nLeasehold improvements | 15,091 | 14,233\nGross property, plant and equipment | 125,848 | 119,128\nAccumulated depreciation | (76,014) | (73,448)\nTotal property, plant and equipment, net | $49,834 | $45,680",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 43",
+      "page": 43,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 43]\nOther non-current assets | 62,950 | 55,335\nTotal other non-current assets | $83,727 | $74,834",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 43",
+      "page": 43,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 43]\nAccrued distribution and marketing | 8,919 | 7,679\nOther current liabilities | 44,452 | 44,024\nTotal other current liabilities | $66,387 | $78,304",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 43",
+      "page": 43,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 43]\nCurrent | $11,487 | $5,571 | $9,445\nDeferred | (1,804) | (3,080) | (3,644)\nTotal | 9,683 | 2,491 | 5,801\nState:\nCurrent | 1,680 | 1,726 | 1,570\nDeferred | (139) | (298) | (49)\nTotal | 1,541 | 1,428 | 1,521\nForeign:\nCurrent | 8,891 | 25,483 | 8,750\nDeferred | 604 | 347 | 669\nTotal | 9,495 | 25,830 | 9,419\nProvision for income taxes | $20,719 | $29,749 | $16,741",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 44",
+      "page": 44,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 44]\nEarnings of foreign subsidiaries | (8,120) | (5,311) | (5,744)\nChange in valuation allowance | 2,091 | \u2014 | \u2014\nResearch and development credit, net | (1,049) | (1,397) | (1,212)\nImpact of the State Aid Decision | (486) | 10,246 | \u2014\nOther | 410 | 279 | (188)\nProvision for income taxes | $20,719 | $29,749 | $16,741\nEffective tax rate | 15.6% | 24.1% | 14.7%",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 44",
+      "page": 44,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 44]\nCapitalized research and development | $15,041 | $10,739\nTax credit carryforwards | 8,643 | 8,856\nAccrued liabilities and other reserves | 6,154 | 6,114\nDeferred revenue | 2,953 | 3,413\nLease liabilities | 2,577 | 2,410\nOther | 3,049 | 3,341\nTotal deferred tax assets | 38,417 | 34,873\nLess: Valuation allowance | (10,966) | (8,866)\nTotal deferred tax assets, net | 27,451 | 26,007\nDeferred tax liabilities:\nDepreciation | 3,276 | 2,551\nRight-of-use assets | 2,300 | 2,125\nMinimum tax on foreign earnings | 1,217 | 1,674\nOther | 678 | 455\nTotal deferred tax liabilities | 7,471 | 6,805\nNet deferred tax assets | $19,980 | $19,202",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 45",
+      "page": 45,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 45]\nIncreases related to tax positions taken during a prior year | 1,971 | 1,727 | 2,044\nDecreases related to tax positions taken during a prior year | (71) | (386) | (1,463)\nIncreases related to tax positions taken during the current year | 3,795 | 2,542 | 2,628\nDecreases related to settlements with taxing authorities | (2,939) | (1,070) | (19)\nDecreases related to expiration of the statute of limitations | (1,552) | (229) | (494)\nEnding balances | $23,242 | $22,038 | $19,454",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 45",
+      "page": 45,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 45]\nOperating leases | Other non-current assets | $11,205 | $10,234\nFinance leases | Property, plant and equipment, net | 1,033 | 1,069\nTotal right-of-use assets | $12,238 | $11,303\nLease liabilities:\nOperating leases | Other current liabilities | $1,579 | $1,488\nOther non-current liabilities | 10,911 | 10,046\nFinance leases | Other current liabilities | 538 | 144\nOther non-current liabilities | 692 | 752\nTotal lease liabilities | $13,720 | $12,430",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 46",
+      "page": 46,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 46]\n2027 | 1,988 | 73 | 2,061\n2028 | 1,848 | 51 | 1,899\n2029 | 1,585 | 48 | 1,633\n2030 | 1,381 | 43 | 1,424\nThereafter | 5,956 | 801 | 6,757\nTotal undiscounted liabilities | 14,725 | 1,579 | 16,304\nLess: Imputed interest | (2,235) | (349) | (2,584)\nTotal lease liabilities | $12,490 | $1,230 | $13,720",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 46",
+      "page": 46,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 46]\nProceeds from/(Repayments of) commercial paper, net | $(5,820) | $3,960 | $(1,333)\nMaturities greater than 90 days:\nProceeds from commercial paper | 5,836 | \u2014 | \u2014\nRepayments of commercial paper | (2,048) | \u2014 | (2,645)\nProceeds from/(Repayments of) commercial paper, net | 3,788 | \u2014 | (2,645)\nTotal proceeds from/(repayments of) commercial paper, net | $(2,032) | $3,960 | $(3,978)",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 47",
+      "page": 47,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 47]\nFixed-rate 0.000% \u2013 4.850% notes | 2025 \u2013 2062 | $86,781 | 0.03% \u2013 5.75% | $97,341 | 0.03% \u2013 6.65%\n2025 debt issuance:\nFixed-rate 4.000% \u2013 4.750% notes | 2028 \u2013 2035 | 4,500 | 4.07% \u2013 4.83% | \u2014\nTotal term debt principal | 91,281 | 97,341\nUnamortized premium/(discount) and issuance costs, net | (309) | (321)\nHedge accounting fair value adjustments | (294) | (358)\nTotal term debt | 90,678 | 96,662\nLess: Current portion of term debt | (12,350) | (10,912)\nTotal non-current portion of term debt | $78,328 | $85,750",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 47",
+      "page": 47,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 47]\n$ 12,393\n2027 | 10,078\n2028 | 9,300\n2029 | 5,235\n2030 | 4,972\nThereafter | 49,303\nTotal term debt principal | $ 91,281",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 48",
+      "page": 48,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 48]\nCommon stock repurchased | (401,672) | (499,372) | (471,419)\nCommon stock issued, net of shares withheld for employee taxes | 58,146 | 66,097 | 78,055\nCommon stock outstanding, ending balances | 14,773,260 | 15,116,786 | 15,550,061",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 48",
+      "page": 48,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 48]\nRSUs granted | 73,466 | $226.68\nRSUs vested | (76,845) | $159.85\nRSUs forfeited | (8,373) | $183.03\nBalance as of September 27, 2025 | 151,574 | $189.75",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 49",
+      "page": 49,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 49]\n2027 | 3,708\n2028 | 1,981\n2029 | 1,306\n2030 | 788\nThereafter | 773\nTotal | $13,308",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 50",
+      "page": 50,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 50]\nCost of sales | (95,699) | (58,617) | (35,141) | (13,779) | (17,724) | \u2014 | (220,960)\nResearch and development | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 | (34,550) | (34,550)\nSelling and marketing | (10,174) | (4,676) | (2,319) | (969) | (1,386) | \u2014 | (19,524)\nGeneral and administrative | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 | (8,077) | (8,077)\nOperating income/(loss) | $72,480 | $47,739 | $26,917 | $13,955 | $14,586 | $(42,627) | $133,050",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 50",
+      "page": 50,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 50]\nCost of sales | (89,587) | (55,197) | (37,519) | (11,744) | (16,305) | \u2014 | (210,352)\nResearch and development | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 | (31,370) | (31,370)\nSelling and marketing | (9,802) | (4,341) | (2,351) | (854) | (1,291) | \u2014 | (18,639)\nGeneral and administrative | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 | (7,458) | (7,458)\nOperating income/(loss) | $67,656 | $41,790 | $27,082 | $12,454 | $13,062 | $(38,828) | $123,216",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 50",
+      "page": 50,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 50]\nCost of sales | (92,394) | (54,101) | (39,787) | (11,542) | (16,313) | \u2014 | (214,137)\nResearch and development | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 | (29,915) | (29,915)\nSelling and marketing | (9,658) | (4,095) | (2,444) | (827) | (1,236) | \u2014 | (18,260)\nGeneral and administrative | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 | (6,672) | (6,672)\nOperating income/(loss) | $60,508 | $36,098 | $30,328 | $11,888 | $12,066 | $(36,587) | $114,301",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 51",
+      "page": 51,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 51]\nU.S. | $151,790 | $142,196 | $138,573\nChina (1) | 64,377 | 66,952 | 72,559\nOther countries | 199,994 | 181,887 | 172,153\nTotal net sales | $416,161 | $391,035 | $383,285",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 51",
+      "page": 51,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 51]\nU.S. | $40,274 | $35,664\nChina (1) | 3,617 | 4,797\nOther countries | 5,943 | 5,219\nTotal long-lived assets | $49,834 | $45,680",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 57",
+      "page": 57,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 57]\nConsolidated Statements of Comprehensive Income for the years ended September 27, 2025, September 28, 2024 and September 30, 2023 | 30\nConsolidated Balance Sheets as of September 27, 2025 and September 28, 2024\nConsolidated Statements of Shareholders\u2019 Equity for the years ended September 27, 2025, September 28, 2024 and September 30, 2023 | 32\nConsolidated Statements of Cash Flows for the years ended September 27, 2025, September 28, 2024 and September 30, 2023\nNotes to Consolidated Financial Statements | 34\nReports of Independent Registered Public Accounting Firm*",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 64",
+      "page": 64,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 64]\nWe issued \u20ac1,000,000,000 aggregate principal amount of the 2025 Notes on November 15, 2019. The maturity date of the 2025 Notes is November 15\n2025, and interest at a rate of 0.000% per annum is paid annually on November 15 of each year, beginning on November 15, 2020, and on the maturity date. As\nof",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 64",
+      "page": 64,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 64]\nWe issued \u20ac1,400,000,000 aggregate principal amount of the 2026 Notes on November 10, 2014. The maturity date of the 2026 Notes is November 10\n2026, and interest at a rate of 1.625% per annum is paid annually on November 10 of each year, beginning on November 10, 2015, and on the maturity date. As\nof",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 65",
+      "page": 65,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 65]\nWe issued \u20ac1,000,000,000 aggregate principal amount of the 2031 Notes on November 15, 2019. The maturity date of the 2031 Notes is November 15\n2031, and interest at a rate of 0.500% per annum is paid annually on November 15 of each year, beginning on November 15, 2020, and on the maturity date. As\nof",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 72",
+      "page": 72,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 72]\nWe and the trustee may, without the consent of any holders, modify or amend the terms of the Indentures and any series of Notes with respect to the\nfollowing:",
+      "type": "table"
+    },
+    {
+      "breadcrumb": "TABLE > page 76",
+      "page": 76,
+      "text": "[Table from AAPL_10-K_2025-09-27_1234567.pdf, page 76]\nApple Asia LLC | Delaware, U.S.\nApple Canada Inc. | Canada\nApple Computer Trading (Shanghai) Co., Ltd. | China\nApple Distribution International Limited | Ireland\nApple India Private Limited | India\nApple Insurance Company, Inc. | Arizona, U.S.\nApple Japan, Inc. | Japan\nApple Korea Limited | South Korea\nApple Operations International Limited | Ireland\nApple Operations Limited | Ireland\nApple Operations Mexico, S.A. de C.V. | Mexico\nApple Pty Limited | Australia\nApple Services Pte. Ltd. | Singapore\nApple South Asia (Thailand) Limited | Thailand\nApple South Asia Pte. Ltd. | Singapore\nApple Vietnam Limited Liability Company | Vietnam\nBraeburn Capital, Inc. | Nevada, U.S.\niTunes K.K. | Japan",
+      "type": "table"
     }
   ]
 }

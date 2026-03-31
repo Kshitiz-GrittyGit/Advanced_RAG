@@ -182,10 +182,29 @@ def adaptive_merge_threshold(page):
 #    FALLBACK: column_cluster + row_spacing for borderless tables
 #############################################
 
+def _is_toc_table(rows):
+    """
+    Return True if this table is a table-of-contents fragment.
+    TOC rows end with a short page-number string (e.g. '1', '53').
+    If 60%+ of non-empty rows match this pattern, it's a TOC — skip it.
+    """
+    numeric_last = 0
+    non_empty    = 0
+    for row in rows:
+        cells = [c for c in row if c is not None and str(c).strip()]
+        if not cells:
+            continue
+        non_empty += 1
+        if re.match(r'^\d{1,3}$', str(cells[-1]).strip()):
+            numeric_last += 1
+    return non_empty > 0 and (numeric_last / non_empty) >= 0.6
+
+
 def find_valid_tables(page):
     """
     Use pdfplumber's find_tables() and reject false positives.
     A single-column "table" with long cell text is a paragraph in a box, not a table.
+    TOC fragments (rows ending in page numbers) are also rejected.
     """
     valid = []
     for t in page.find_tables():
@@ -196,11 +215,14 @@ def find_valid_tables(page):
         avg_cols   = sum(col_counts) / len(col_counts) if col_counts else 0
 
         # Reject false positives: "tables" that are really paragraphs in text boxes.
-        # Real tables have short, data-like cells. False positives have long prose cells.
         total_cells  = sum(len(r) for r in rows)
         total_text   = sum(len(str(c or '')) for r in rows for c in r)
         avg_cell_len = total_text / max(total_cells, 1)
         if avg_cell_len > 50 and avg_cols <= 2:
+            continue
+
+        # Reject table-of-contents fragments
+        if _is_toc_table(rows):
             continue
 
         valid.append({"rows": rows, "bbox": t.bbox})
@@ -390,7 +412,51 @@ def chunk_section(section, parent_breadcrumb=""):
 
 
 #############################################
-# 8. WORKER — one PDF per call, with error handling
+# 8. TABLE → TEXT FLATTENING
+#    Converts extracted table rows into readable text chunks for embedding.
+#############################################
+
+def _flatten_row(cells):
+    """Join non-empty cells, collapsing '$' with the next value and '%' with the previous."""
+    parts = []
+    skip = False
+    for i, c in enumerate(cells):
+        if skip:
+            skip = False
+            continue
+        c = str(c).strip() if c else ""
+        if not c:
+            continue
+        if c == "$" and i + 1 < len(cells) and cells[i + 1]:
+            parts.append(f"${str(cells[i + 1]).strip()}")
+            skip = True
+        elif c == "%":
+            if parts:
+                parts[-1] = parts[-1] + "%"
+        else:
+            parts.append(c)
+    return " | ".join(parts)
+
+
+def flatten_table(rows, page_num, source):
+    """
+    Convert a table (list of rows) into a single text block suitable for embedding.
+    Each row becomes pipe-delimited values. The block is attributed with source and page.
+    """
+    lines = []
+    for row in rows:
+        cells = [str(c).strip() if c else "" for c in row]
+        line = _flatten_row(cells)
+        if line:
+            lines.append(line)
+    if not lines:
+        return None
+    header = f"[Table from {source}, page {page_num}]"
+    return header + "\n" + "\n".join(lines)
+
+
+#############################################
+# 9. WORKER — one PDF per call, with error handling
 #############################################
 
 def process_pdf(pdf_path):
@@ -399,7 +465,8 @@ def process_pdf(pdf_path):
     try:
         conn   = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        table_count = 0
+        table_count   = 0
+        table_chunks  = []   # flattened table text for embedding
 
         with pdfplumber.open(pdf_path) as pdf:
             dominant_size = compute_dominant_font_size(pdf)
@@ -418,6 +485,16 @@ def process_pdf(pdf_path):
                     )
                     table_count += 1
 
+                    # Flatten table to text chunk for vector embedding
+                    flat = flatten_table(t["rows"], page_num, pdf_path.name)
+                    if flat:
+                        table_chunks.append({
+                            "breadcrumb": f"TABLE > page {page_num}",
+                            "page": page_num,
+                            "text": flat,
+                            "type": "table",
+                        })
+
                 # Text regions between tables
                 text_regions = extract_text_regions(page, table_bboxes, page_num, boilerplate)
 
@@ -433,6 +510,15 @@ def process_pdf(pdf_path):
                                     (pdf_path.name, page_num, json.dumps(table))
                                 )
                                 table_count += 1
+
+                                flat = flatten_table(table, page_num, pdf_path.name)
+                                if flat:
+                                    table_chunks.append({
+                                        "breadcrumb": f"TABLE > page {page_num}",
+                                        "page": page_num,
+                                        "text": flat,
+                                        "type": "table",
+                                    })
                         continue
 
                     # Extract lines with font sizes for heading detection
@@ -450,7 +536,10 @@ def process_pdf(pdf_path):
         # Merge body lines into paragraphs, build hierarchy, chunk
         paragraphs = merge_lines_to_paragraphs(all_lines)
         doc_json   = build_hierarchical_json(paragraphs)
-        all_chunks = chunk_section(doc_json)
+        narrative_chunks = chunk_section(doc_json)
+
+        # Combine narrative + table chunks
+        all_chunks = narrative_chunks + table_chunks
 
         output = {
             "metadata": {
@@ -458,6 +547,8 @@ def process_pdf(pdf_path):
                 "dominant_font_size": dominant_size,
                 "boilerplate_count":  len(boilerplate),
                 "tables_extracted":   table_count,
+                "table_chunks":       len(table_chunks),
+                "narrative_chunks":   len(narrative_chunks),
                 "rag_chunks":         len(all_chunks),
             },
             "hierarchy": doc_json,

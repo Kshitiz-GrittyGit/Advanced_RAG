@@ -2,17 +2,19 @@
 retrieval.py — Query-time pipeline: hybrid search + re-ranking + query routing.
 
 Pipeline per query:
-  1. Route      → classify as NARRATIVE / TABLE / HYBRID
+  1. Route      → classify as NARRATIVE / TABLE / HYBRID (observability only)
   2. Filter     → extract metadata constraints (ticker, year, doc type)
   3. Dense      → Qdrant vector search with BGE embeddings
   4. Sparse     → BM25 over filtered Qdrant payload texts
   5. Fuse       → Reciprocal Rank Fusion (RRF) of dense + sparse results
   6. Re-rank    → cross-encoder scores each (query, chunk) pair precisely
-  7. Tables     → Postgres query for structured table data (TABLE / HYBRID routes)
-  8. Return     → RetrievalResult with ranked chunks + matching tables
+  7. Return     → RetrievalResult with ranked chunks (narrative + table, unified)
+
+Both narrative text and flattened table text live as chunks in Qdrant.
+Tables are no longer queried from Postgres at retrieval time.
 
 Install deps:
-  pip install rank_bm25 sentence_transformers qdrant-client psycopg2-binary
+  pip install rank_bm25 sentence_transformers qdrant-client
 
 Usage:
   from retrieval import retrieve
@@ -25,7 +27,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 from dataclasses import dataclass
@@ -33,7 +34,6 @@ from enum import Enum
 from typing import Optional
 
 import numpy as np
-import psycopg2
 from rank_bm25 import BM25Okapi
 from qdrant_client import QdrantClient
 from qdrant_client.models import FieldCondition, Filter, MatchValue
@@ -47,13 +47,6 @@ QDRANT_URL      = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = "financial_docs"
 EMBED_MODEL     = "BAAI/bge-large-en-v1.5"
 RERANK_MODEL    = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-
-DB_CONFIG = dict(
-    host     = "localhost",
-    database = "pdf_tables",
-    user     = os.getenv("DB_USER", os.getenv("USER", "postgres")),
-    password = os.getenv("DB_PASSWORD", ""),
-)
 
 # How many candidates to gather before re-ranking
 DENSE_CANDIDATES  = 20
@@ -303,62 +296,14 @@ def _rerank(
 
 
 # ---------------------------------------------------------------------------
-# 7. Table Search  (Postgres)
-# ---------------------------------------------------------------------------
-
-def _table_search(spec: FilterSpec) -> list["TableResult"]:
-    """
-    Return all tables matching the filter spec, ordered by page number.
-    No vector search — tables are structured data, SQL is the right tool.
-    """
-    conditions = ["1=1"]
-    values: list = []
-
-    if spec.ticker:
-        conditions.append("ticker = %s");         values.append(spec.ticker)
-    if spec.document_type:
-        conditions.append("document_type = %s");  values.append(spec.document_type)
-    if spec.fiscal_year:
-        conditions.append("fiscal_year = %s");    values.append(spec.fiscal_year)
-    if spec.fiscal_quarter:
-        conditions.append("fiscal_quarter = %s"); values.append(spec.fiscal_quarter)
-
-    where = " AND ".join(conditions)
-    conn  = psycopg2.connect(**DB_CONFIG)
-    cur   = conn.cursor()
-    cur.execute(
-        f"""SELECT source, page_number, ticker, fiscal_year, document_type, table_json
-            FROM extracted_tables
-            WHERE {where}
-            ORDER BY page_number""",
-        values,
-    )
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return [
-        TableResult(
-            source        = row[0],
-            page_number   = row[1],
-            ticker        = row[2] or "",
-            fiscal_year   = row[3] or 0,
-            document_type = row[4] or "",
-            table         = row[5] if isinstance(row[5], list) else json.loads(row[5]),
-        )
-        for row in rows
-    ]
-
-
-# ---------------------------------------------------------------------------
 # Result types
 # ---------------------------------------------------------------------------
 
 @dataclass
 class ChunkResult:
     score:         float          # cross-encoder relevance score
-    text:          str            # raw chunk text
-    breadcrumb:    str            # section path e.g. "ROOT > Risk Factors > Market Risk"
+    text:          str            # raw chunk text (narrative or flattened table)
+    breadcrumb:    str            # section path or "TABLE > page N"
     page:          Optional[int]  # page number in source PDF
     source:        str            # source filename
     ticker:        str
@@ -367,21 +312,10 @@ class ChunkResult:
 
 
 @dataclass
-class TableResult:
-    source:        str
-    page_number:   int
-    ticker:        str
-    fiscal_year:   int
-    document_type: str
-    table:         list           # list of rows, each row is a list of cell strings
-
-
-@dataclass
 class RetrievalResult:
     query:  str
     route:  QueryRoute
-    chunks: list[ChunkResult]     # re-ranked narrative chunks
-    tables: list[TableResult]     # matching structured tables from Postgres
+    chunks: list[ChunkResult]     # re-ranked chunks (narrative + table, unified)
 
 
 # ---------------------------------------------------------------------------
@@ -411,7 +345,7 @@ def retrieve(
         top_k:          Number of chunks to return (after re-ranking)
 
     Returns:
-        RetrievalResult with .chunks (narrative) and .tables (structured)
+        RetrievalResult with .chunks (narrative + table chunks, unified ranking)
 
     Example:
         result = retrieve(
@@ -419,7 +353,7 @@ def retrieve(
             ticker="AAPL", document_type="10-K", fiscal_year=2025
         )
     """
-    # Step 1 — route
+    # Step 1 — route (kept for observability, all routes search Qdrant)
     route = route_query(query)
 
     # Step 2 — build filter (explicit overrides auto-extracted)
@@ -435,37 +369,30 @@ def retrieve(
         ),
     )
 
-    chunks: list[ChunkResult] = []
-    tables: list[TableResult] = []
+    # Steps 3-6 — vector + BM25 + RRF + re-rank
+    # Both narrative and table chunks live in Qdrant, searched together.
+    qdrant_filter = _build_qdrant_filter(spec)
 
-    # Steps 3-6 — vector + BM25 + RRF + re-rank (narrative and hybrid)
-    if route in (QueryRoute.NARRATIVE, QueryRoute.HYBRID):
-        qdrant_filter = _build_qdrant_filter(spec)
+    dense  = _dense_search(query, qdrant_filter, DENSE_CANDIDATES)
+    sparse = _bm25_search( query, qdrant_filter, SPARSE_CANDIDATES)
+    fused  = _rrf_fusion(dense, sparse)
+    ranked = _rerank(query, fused, top_k)
 
-        dense  = _dense_search(query, qdrant_filter, DENSE_CANDIDATES)
-        sparse = _bm25_search( query, qdrant_filter, SPARSE_CANDIDATES)
-        fused  = _rrf_fusion(dense, sparse)
-        ranked = _rerank(query, fused, top_k)
+    chunks = [
+        ChunkResult(
+            score         = r["rerank_score"],
+            text          = r["payload"].get("text", ""),
+            breadcrumb    = r["payload"].get("breadcrumb", ""),
+            page          = r["payload"].get("page"),
+            source        = r["payload"].get("source_file", ""),
+            ticker        = r["payload"].get("ticker", ""),
+            fiscal_year   = r["payload"].get("fiscal_year", 0),
+            document_type = r["payload"].get("document_type", ""),
+        )
+        for r in ranked
+    ]
 
-        chunks = [
-            ChunkResult(
-                score         = r["rerank_score"],
-                text          = r["payload"].get("text", ""),
-                breadcrumb    = r["payload"].get("breadcrumb", ""),
-                page          = r["payload"].get("page"),
-                source        = r["payload"].get("source_file", ""),
-                ticker        = r["payload"].get("ticker", ""),
-                fiscal_year   = r["payload"].get("fiscal_year", 0),
-                document_type = r["payload"].get("document_type", ""),
-            )
-            for r in ranked
-        ]
-
-    # Step 7 — table search (table and hybrid)
-    if route in (QueryRoute.TABLE, QueryRoute.HYBRID):
-        tables = _table_search(spec)
-
-    return RetrievalResult(query=query, route=route, chunks=chunks, tables=tables)
+    return RetrievalResult(query=query, route=route, chunks=chunks)
 
 
 # ---------------------------------------------------------------------------
@@ -516,16 +443,13 @@ if __name__ == "__main__":
         print(f"QUERY : {query}")
         result = retrieve(query, **filters)
         print(f"ROUTE : {result.route.value}")
-        print(f"CHUNKS: {len(result.chunks)}  |  TABLES: {len(result.tables)}")
+        print(f"CHUNKS: {len(result.chunks)}")
 
         for i, chunk in enumerate(result.chunks, 1):
-            print(f"\n  [{i}] score={chunk.score:.4f}  page={chunk.page}")
+            is_table = chunk.breadcrumb.startswith("TABLE")
+            tag = "[TABLE]" if is_table else "[TEXT]"
+            print(f"\n  [{i}] {tag}  score={chunk.score:.4f}  page={chunk.page}")
             print(f"      {chunk.breadcrumb}")
             print(f"      {chunk.text}")
-
-        for i, table in enumerate(result.tables, 1):
-            print(f"\n  Table {i} — page {table.page_number}: {len(table.table)} rows")
-            for row in table.table:
-                print(f"    {row}")
 
         print()
