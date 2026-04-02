@@ -416,6 +416,84 @@ def chunk_section(section, parent_breadcrumb=""):
 #    Converts extracted table rows into readable text chunks for embedding.
 #############################################
 
+# Patterns that indicate a cell is a column header label, not data
+_YEAR_RE    = re.compile(r'\b(20\d{2})\b')
+_QUARTER_RE = re.compile(r'\b(Q[1-4])\b', re.IGNORECASE)
+
+
+def _looks_like_header_row(row):
+    """
+    Strategy 1: Return True if this row looks like column headers.
+    Signals: contains fiscal years or quarters, no $ values, short cells.
+    """
+    cells = [str(c).strip() if c else "" for c in row if c is not None]
+    non_empty = [c for c in cells if c]
+    if not non_empty:
+        return False
+    has_year    = any(_YEAR_RE.search(c) for c in non_empty)
+    has_quarter = any(_QUARTER_RE.search(c) for c in non_empty)
+    has_dollar  = any("$" in c or (c.replace(",", "").isdigit() and len(c) > 3) for c in non_empty)
+    avg_len     = sum(len(c) for c in non_empty) / len(non_empty)
+    return (has_year or has_quarter) and not has_dollar and avg_len < 40
+
+
+def _extract_header_from_above(page, bbox):
+    """
+    Strategy 2: Crop the 60pt strip above the table bounding box and pull
+    fiscal year / quarter labels from the text there.
+    Returns a list of column label strings, or [] if nothing found.
+    """
+    x0, y0, x1, _ = bbox
+    strip_y0 = max(0, y0 - 60)
+    if strip_y0 >= y0:
+        return []
+
+    cropped = page.crop((x0, strip_y0, x1, y0))
+    text    = cropped.extract_text() or ""
+
+    years    = _YEAR_RE.findall(text)
+    quarters = _QUARTER_RE.findall(text.upper())
+
+    labels = []
+    if years:
+        # deduplicate while preserving order
+        seen = set()
+        for y in years:
+            if y not in seen:
+                labels.append(y)
+                seen.add(y)
+    elif quarters:
+        seen = set()
+        for q in quarters:
+            if q not in seen:
+                labels.append(q)
+                seen.add(q)
+
+    return labels
+
+
+def _detect_header(rows, page, bbox):
+    """
+    Combine Strategy 1 and 2.
+    Returns (header_labels, data_rows).
+    header_labels is a list of column name strings (may be empty if not found).
+    data_rows is the rows to actually flatten (first row removed if it was a header).
+    """
+    # Strategy 1: first row looks like a header?
+    if rows and _looks_like_header_row(rows[0]):
+        header_cells = [str(c).strip() if c else "" for c in rows[0] if c is not None]
+        labels = [c for c in header_cells if c]
+        return labels, rows[1:]
+
+    # Strategy 2: text above the table
+    if page is not None and bbox is not None:
+        labels = _extract_header_from_above(page, bbox)
+        if labels:
+            return labels, rows
+
+    return [], rows
+
+
 def _flatten_row(cells):
     """Join non-empty cells, collapsing '$' with the next value and '%' with the previous."""
     parts = []
@@ -438,21 +516,29 @@ def _flatten_row(cells):
     return " | ".join(parts)
 
 
-def flatten_table(rows, page_num, source):
+def flatten_table(rows, page_num, source, page=None, bbox=None):
     """
-    Convert a table (list of rows) into a single text block suitable for embedding.
-    Each row becomes pipe-delimited values. The block is attributed with source and page.
+    Convert a table into a single text block suitable for embedding.
+    Detects column headers via Strategy 1 (header row) or Strategy 2 (text above).
+    Each data row becomes pipe-delimited values. Block is attributed with source and page.
     """
+    header_labels, data_rows = _detect_header(rows, page, bbox)
+
     lines = []
-    for row in rows:
+    for row in data_rows:
         cells = [str(c).strip() if c else "" for c in row]
         line = _flatten_row(cells)
         if line:
             lines.append(line)
+
     if not lines:
         return None
-    header = f"[Table from {source}, page {page_num}]"
-    return header + "\n" + "\n".join(lines)
+
+    attribution = f"[Table from {source}, page {page_num}]"
+    if header_labels:
+        col_header = "Columns: " + " | ".join(header_labels)
+        return attribution + "\n" + col_header + "\n" + "\n".join(lines)
+    return attribution + "\n" + "\n".join(lines)
 
 
 #############################################
@@ -486,7 +572,8 @@ def process_pdf(pdf_path):
                     table_count += 1
 
                     # Flatten table to text chunk for vector embedding
-                    flat = flatten_table(t["rows"], page_num, pdf_path.name)
+                    flat = flatten_table(t["rows"], page_num, pdf_path.name,
+                                        page=page, bbox=t["bbox"])
                     if flat:
                         table_chunks.append({
                             "breadcrumb": f"TABLE > page {page_num}",
