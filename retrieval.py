@@ -31,6 +31,8 @@ import os
 import re
 from dataclasses import dataclass
 from enum import Enum
+from dotenv import load_dotenv
+load_dotenv()
 from typing import Optional
 
 import numpy as np
@@ -49,10 +51,10 @@ EMBED_MODEL     = "BAAI/bge-large-en-v1.5"
 RERANK_MODEL    = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # How many candidates to gather before re-ranking
-DENSE_CANDIDATES  = 20
-SPARSE_CANDIDATES = 20
+DENSE_CANDIDATES  = 40
+SPARSE_CANDIDATES = 40
 RRF_K             = 60    # standard RRF constant
-TOP_K_DEFAULT     = 5     # final chunks returned after re-ranking
+TOP_K_DEFAULT     = 10    # final chunks returned after re-ranking
 
 # BGE query prefix — required at query time, NOT at index time
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
@@ -274,12 +276,16 @@ def _rerank(
     query:      str,
     candidates: list[dict],
     top_k:      int,
+    route:      QueryRoute = QueryRoute.NARRATIVE,
 ) -> list[dict]:
     """
     Score each (query, passage) pair with the cross-encoder.
     Cross-encoders use full attention between query and passage —
     much more precise than bi-encoder cosine similarity, but slower.
     Only applied to the top candidates after RRF (typically 20-40).
+
+    For TABLE/HYBRID routes, table chunks get a score boost because
+    cross-encoders trained on passages undervalue structured data.
     """
     if not candidates:
         return []
@@ -287,11 +293,18 @@ def _rerank(
     pairs  = [(query, c["payload"].get("text", "")) for c in candidates]
     scores = _reranker.predict(pairs)
 
-    ranked = sorted(
-        zip(scores, candidates), key=lambda x: float(x[0]), reverse=True
-    )[:top_k]
+    # Boost table chunks when query needs numerical/table data
+    table_boost = 3.0 if route in (QueryRoute.TABLE, QueryRoute.HYBRID) else 0.0
+    boosted = []
+    for score, cand in zip(scores, candidates):
+        s = float(score)
+        if cand["payload"].get("breadcrumb", "").startswith("TABLE") and table_boost:
+            s += table_boost
+        boosted.append((s, cand))
 
-    return [{"payload": c["payload"], "rerank_score": float(s)}
+    ranked = sorted(boosted, key=lambda x: x[0], reverse=True)[:top_k]
+
+    return [{"payload": c["payload"], "rerank_score": s}
             for s, c in ranked]
 
 
@@ -376,7 +389,7 @@ def retrieve(
     dense  = _dense_search(query, qdrant_filter, DENSE_CANDIDATES)
     sparse = _bm25_search( query, qdrant_filter, SPARSE_CANDIDATES)
     fused  = _rrf_fusion(dense, sparse)
-    ranked = _rerank(query, fused, top_k)
+    ranked = _rerank(query, fused, top_k, route=route)
 
     chunks = [
         ChunkResult(
