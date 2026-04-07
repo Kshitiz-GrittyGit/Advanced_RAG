@@ -39,8 +39,13 @@ documents/
 # Claude Code memory
 .claude/
 
-# retreival result file
+# Retrieval result file
 results.txt
 
+# Evaluation outputs (contain run data, not code)
+eval_results.json
+eval_output.log
+giskard_report.html
+
 # Project workflow
-PROJECT_WORKFLOW.txt 
+PROJECT_WORKFLOW.txt

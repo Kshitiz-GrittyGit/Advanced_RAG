@@ -46,7 +46,7 @@ from retrieval import RetrievalResult
 # Config
 # ---------------------------------------------------------------------------
 
-LLM_PROVIDER  = os.getenv("LLM_PROVIDER", "ollama")    # "ollama" | "bedrock" | "anthropic" | "huggingface"
+LLM_PROVIDER  = os.getenv("LLM_PROVIDER", "ollama")    # "ollama" | "bedrock" | "anthropic" | "huggingface" | "groq"
 AWS_REGION    = os.getenv("AWS_REGION", "us-east-1")
 
 # Ollama — local dev
@@ -63,6 +63,10 @@ ANTHROPIC_MODEL     = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 # HuggingFace Inference API — free tier, open-source models
 HF_TOKEN    = os.getenv("HF_TOKEN", "")
 HF_MODEL    = os.getenv("HF_MODEL", "Qwen/Qwen2.5-72B-Instruct")
+
+# Groq — free, fast, daily reset (better than HF monthly quota)
+GROQ_API_KEY  = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL    = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 MAX_NEW_TOKENS = 1024
 TEMPERATURE    = 0.1
@@ -226,6 +230,35 @@ def _call_huggingface(system_prompt: str, user_message: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Groq provider  (free, fast, daily reset)
+# ---------------------------------------------------------------------------
+
+def _call_groq(system_prompt: str, user_message: str) -> str:
+    """
+    Calls Groq's free inference API. Daily rate limits reset every 24 hours —
+    much more practical than HuggingFace's monthly quota for eval workloads.
+    Default model: llama-3.3-70b-versatile.
+    Get a free key at: console.groq.com
+    """
+    try:
+        from groq import Groq
+    except ImportError:
+        raise ImportError("groq not installed. Run: pip install groq")
+
+    client = Groq(api_key=GROQ_API_KEY)
+    resp = client.chat.completions.create(
+        model    = GROQ_MODEL,
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
+        ],
+        temperature = TEMPERATURE,
+        max_tokens  = MAX_NEW_TOKENS,
+    )
+    return resp.choices[0].message.content.strip()
+
+
+# ---------------------------------------------------------------------------
 # Anthropic provider
 # ---------------------------------------------------------------------------
 
@@ -277,6 +310,8 @@ def generate(query: str, result: RetrievalResult) -> AnswerResponse:
         answer = _call_anthropic(system_prompt, user_message)
     elif LLM_PROVIDER == "huggingface":
         answer = _call_huggingface(system_prompt, user_message)
+    elif LLM_PROVIDER == "groq":
+        answer = _call_groq(system_prompt, user_message)
     else:
         answer = _call_ollama(system_prompt, user_message)
     latency_ms = int((time.perf_counter() - t0) * 1000)
