@@ -262,19 +262,37 @@ def run_ragas(samples: list[EvalSample]):
 
 def run_giskard(samples: list[EvalSample]):
     """
-    Run Giskard's automated RAG evaluation scan.
+    Run Giskard's automated RAG vulnerability scan.
+
+    Uses Groq (Llama 3.3 70B) as the judge LLM via OpenAI-compatible API.
 
     Detects:
-      - Hallucinations (answer not supported by context)
-      - Correctness issues (answer contradicts ground truth)
-      - Robustness problems (minor query changes flip the answer)
+      - Hallucinations       — answers not grounded in retrieved context
+      - Faithfulness issues  — answers contradict source documents
+      - Robustness failures  — minor query changes flip the answer
+      - Harmful content      — outputs that could cause harm
+      - Prompt injection     — attempts to hijack the pipeline
     """
     import giskard
-    import pandas as pd
+    import openai
 
-    print("\n[GISKARD] Building model wrapper...")
+    groq_api_key = os.getenv("GROQ_API_KEY", "")
+    if not groq_api_key:
+        raise RuntimeError("GROQ_API_KEY not set in .env")
 
-    # Giskard needs a function that takes a DataFrame and returns predictions
+    # Wire Giskard's internal LLM judge to Groq via OpenAI-compatible API
+    print("\n[GISKARD] Configuring judge LLM (Llama 3.3 70B via Groq)...")
+    groq_client = openai.OpenAI(
+        api_key  = groq_api_key,
+        base_url = "https://api.groq.com/openai/v1",
+    )
+    from giskard.llm.client.openai import OpenAIClient
+    giskard.llm.set_default_client(
+        OpenAIClient("llama-3.3-70b-versatile", client=groq_client)
+    )
+
+    print("[GISKARD] Building model wrapper...")
+
     def predict(df: pd.DataFrame) -> list[str]:
         from retrieval import retrieve
         from generation import generate
@@ -291,35 +309,41 @@ def run_giskard(samples: list[EvalSample]):
             answers.append(response.answer)
         return answers
 
-    # Build test DataFrame
     df = pd.DataFrame([
         {"question": s.question, "ground_truth": s.ground_truth}
         for s in samples
     ])
 
-    # Wrap as Giskard model
     model = giskard.Model(
-        model=predict,
-        model_type="text_generation",
-        name="Financial RAG Pipeline",
-        description="RAG pipeline for SEC 10-K/10-Q filings",
-        feature_names=["question"],
+        model        = predict,
+        model_type   = "text_generation",
+        name         = "Financial RAG Pipeline",
+        description  = (
+            "RAG pipeline for SEC 10-K/10-Q filings. "
+            "Answers natural language questions about financial data using "
+            "hybrid retrieval (dense + BM25 + cross-encoder re-ranking) "
+            "over Apple's 2025 annual report."
+        ),
+        feature_names = ["question"],
     )
 
-    # Wrap as Giskard dataset
     dataset = giskard.Dataset(
-        df=df,
-        name="Apple 10-K Eval Set",
-        target="ground_truth",
+        df     = df,
+        name   = "Apple 10-K Eval Set",
+        target = "ground_truth",
     )
 
     print(f"[GISKARD] Scanning {len(df)} samples for vulnerabilities...")
     scan_result = giskard.scan(model, dataset)
 
-    # Save report
+    # Save HTML report
     report_path = "giskard_report.html"
     scan_result.to_html(report_path)
-    print(f"[GISKARD] Report saved to {report_path}")
+    print(f"[GISKARD] HTML report saved to {report_path}")
+
+    # Print text summary
+    print("\n[GISKARD] Scan Summary:")
+    print(scan_result)
 
     return scan_result
 

@@ -239,23 +239,34 @@ def _call_groq(system_prompt: str, user_message: str) -> str:
     much more practical than HuggingFace's monthly quota for eval workloads.
     Default model: llama-3.3-70b-versatile.
     Get a free key at: console.groq.com
+
+    Includes automatic retry with backoff for transient TPM rate limits.
     """
+    import time as _time
     try:
-        from groq import Groq
+        from groq import Groq, RateLimitError
     except ImportError:
         raise ImportError("groq not installed. Run: pip install groq")
 
     client = Groq(api_key=GROQ_API_KEY)
-    resp = client.chat.completions.create(
-        model    = GROQ_MODEL,
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": user_message},
-        ],
-        temperature = TEMPERATURE,
-        max_tokens  = MAX_NEW_TOKENS,
-    )
-    return resp.choices[0].message.content.strip()
+    for attempt in range(5):
+        try:
+            resp = client.chat.completions.create(
+                model    = GROQ_MODEL,
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user",   "content": user_message},
+                ],
+                temperature = TEMPERATURE,
+                max_tokens  = MAX_NEW_TOKENS,
+            )
+            return resp.choices[0].message.content.strip()
+        except RateLimitError as e:
+            if attempt == 4:
+                raise
+            wait = 5 * (attempt + 1)  # 5s, 10s, 15s, 20s
+            print(f"[groq] Rate limit hit, retrying in {wait}s... ({e})"[:120])
+            _time.sleep(wait)
 
 
 # ---------------------------------------------------------------------------
