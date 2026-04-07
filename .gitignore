@@ -46,6 +46,7 @@ results.txt
 eval_results.json
 eval_output.log
 giskard_report.html
+giskard_output.log
 
 # Project workflow
 PROJECT_WORKFLOW.txt
