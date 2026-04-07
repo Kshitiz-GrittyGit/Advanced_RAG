@@ -23,8 +23,10 @@ import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from guardrails import check_input, check_output, GuardrailError
 
 # ---------------------------------------------------------------------------
 # Lazy-load heavy models once at startup, not per request
@@ -58,6 +60,14 @@ app = FastAPI(
 )
 
 
+@app.exception_handler(GuardrailError)
+async def guardrail_exception_handler(request: Request, exc: GuardrailError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"blocked": True, "message": exc.message, "reason": exc.reason},
+    )
+
+
 # ---------------------------------------------------------------------------
 # Request / Response schemas
 # ---------------------------------------------------------------------------
@@ -73,10 +83,11 @@ class QueryRequest(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    answer:      str        # Grounded answer from LLM
+    answer:      str        # Grounded answer from LLM (with disclaimer appended)
     sources:     list[str]  # "AAPL 10-K 2025, page 39 — ROOT > Note 2 – Revenue"
     route:       str        # "narrative" | "table" | "hybrid"
     latency_ms:  int        # Total wall-clock latency
+    warnings:    list[str]  # Grounding warnings (empty if all checks pass)
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +113,9 @@ def query(req: QueryRequest):
     from retrieval import retrieve
     from generation import generate
 
+    # --- Input guardrails ---
+    check_input(req.query)  # raises GuardrailError → handled by guardrail_exception_handler
+
     t0 = time.perf_counter()
 
     try:
@@ -117,16 +131,28 @@ def query(req: QueryRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Retrieval failed: {e}")
 
+    # --- Pre-check: no chunks before paying LLM cost ---
+    if not result.chunks:
+        raise GuardrailError(
+            message     = "No relevant information was found in the documents for your query.",
+            status_code = 404,
+            reason      = "no_chunks_retrieved",
+        )
+
     try:
         response = generate(req.query, result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
 
+    # --- Output guardrails: grounding + disclaimer ---
+    final_answer, warnings = check_output(response.answer, result, add_disclaimer=True)
+
     total_ms = int((time.perf_counter() - t0) * 1000)
 
     return QueryResponse(
-        answer     = response.answer,
+        answer     = final_answer,
         sources    = response.sources,
         route      = result.route.value,
         latency_ms = total_ms,
+        warnings   = warnings,
     )
